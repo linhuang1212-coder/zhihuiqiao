@@ -20,14 +20,22 @@ import MyDemands from "@/pages/parent/Demands";
 import BrowseTeachers from "@/pages/parent/Teachers";
 import TeacherDetail from "@/pages/parent/TeacherDetail";
 import ParentOrders from "@/pages/parent/Orders";
+import DemandApplications from "@/pages/parent/DemandApplications";
+
+// Chat pages (shared between parent and teacher)
+import ConversationList from "@/pages/chat/ConversationList";
+import ChatWindow from "@/pages/chat/ChatWindow";
 
 // Teacher pages
 import TeacherDashboard from "@/pages/teacher/Dashboard";
 import TeacherProfile from "@/pages/teacher/Profile";
 import TeacherDemands from "@/pages/teacher/Demands";
+import DemandHall from "@/pages/teacher/DemandHall";
+import MyApplications from "@/pages/teacher/MyApplications";
 import TeacherOrders from "@/pages/teacher/Orders";
 import TeacherEarnings from "@/pages/teacher/Earnings";
 import TeacherNotifications from "@/pages/teacher/Notifications";
+import TeacherCertification from "@/pages/teacher/Certification";
 
 // Parent extra pages
 import ParentPackages from "@/pages/parent/Packages";
@@ -40,6 +48,7 @@ import TeacherVerify from "@/pages/admin/Verify";
 import AdminOrders from "@/pages/admin/AdminOrders";
 import AdminAnalytics from "@/pages/admin/Analytics";
 import AdminRevenue from "@/pages/admin/Revenue";
+import AdminCertifications from "@/pages/admin/Certifications";
 
 function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -92,6 +101,15 @@ function AppRouter() {
       <Route path="/parent/unlocks">
         {() => <ProtectedLayout><ParentUnlocks /></ProtectedLayout>}
       </Route>
+      <Route path="/parent/demands/:id/applications">
+        {() => <ProtectedLayout><DemandApplications /></ProtectedLayout>}
+      </Route>
+      <Route path="/parent/messages/:id">
+        {() => <ProtectedLayout><ChatWindow /></ProtectedLayout>}
+      </Route>
+      <Route path="/parent/messages">
+        {() => <ProtectedLayout><ConversationList /></ProtectedLayout>}
+      </Route>
       <Route path="/parent/orders">
         {() => <ProtectedLayout><ParentOrders /></ProtectedLayout>}
       </Route>
@@ -106,11 +124,26 @@ function AppRouter() {
       <Route path="/teacher/demands">
         {() => <ProtectedLayout><TeacherDemands /></ProtectedLayout>}
       </Route>
+      <Route path="/teacher/demand-hall">
+        {() => <ProtectedLayout><DemandHall /></ProtectedLayout>}
+      </Route>
+      <Route path="/teacher/my-applications">
+        {() => <ProtectedLayout><MyApplications /></ProtectedLayout>}
+      </Route>
+      <Route path="/teacher/messages/:id">
+        {() => <ProtectedLayout><ChatWindow /></ProtectedLayout>}
+      </Route>
+      <Route path="/teacher/messages">
+        {() => <ProtectedLayout><ConversationList /></ProtectedLayout>}
+      </Route>
       <Route path="/teacher/notifications">
         {() => <ProtectedLayout><TeacherNotifications /></ProtectedLayout>}
       </Route>
       <Route path="/teacher/orders">
         {() => <ProtectedLayout><TeacherOrders /></ProtectedLayout>}
+      </Route>
+      <Route path="/teacher/certification">
+        {() => <ProtectedLayout><TeacherCertification /></ProtectedLayout>}
       </Route>
       <Route path="/teacher/earnings">
         {() => <ProtectedLayout><TeacherEarnings /></ProtectedLayout>}
@@ -125,6 +158,9 @@ function AppRouter() {
       </Route>
       <Route path="/admin/verify">
         {() => <ProtectedLayout><TeacherVerify /></ProtectedLayout>}
+      </Route>
+      <Route path="/admin/certifications">
+        {() => <ProtectedLayout><AdminCertifications /></ProtectedLayout>}
       </Route>
       <Route path="/admin/orders">
         {() => <ProtectedLayout><AdminOrders /></ProtectedLayout>}

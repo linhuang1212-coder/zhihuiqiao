@@ -1,0 +1,40 @@
+---
+description: 智慧桥项目全局约束 — 每次交互必读
+alwaysApply: true
+---
+
+# 全局约束
+
+## 项目简介
+智慧桥 WisdomBridge — 大学生/研究生兼职家教平台。
+连接家长（孩子 2-18 岁）和高学历兼职老师。
+服务类别：音乐陪伴、体育培训、科目辅导、兴趣培养、氛围陪伴、其他。
+
+## 技术栈
+| 层 | 选型 |
+|---|---|
+| 前端 | React 18 + TypeScript + Vite + Tailwind CSS v3 + shadcn/ui + wouter (hash 路由) |
+| 后端 | Express 5 + TypeScript + tsx |
+| 数据库 | SQLite (data.db) + Drizzle ORM + better-sqlite3 |
+| 状态管理 | @tanstack/react-query v5（仅对象形式） |
+| 认证 | Cookie Session (express-session) |
+
+## 铁律（违反即回退）
+- 所有 UI 文案必须中文；变量名和注释用英文
+- NEVER use localStorage / sessionStorage / indexedDB
+- 路由必须使用 `<Router hook={useHashLocation}>` 包裹 `<Switch>`
+- 所有 HTTP 请求使用 `apiRequest`（from `@/lib/queryClient`），NEVER 原生 fetch
+- 每个可交互元素添加 `data-testid`
+- 不得修改 `server/index.ts`、`server/vite.ts`、`client/src/components/ui/*`
+
+## 三种用户角色
+| 角色 | 路由前缀 | 核心功能 |
+|------|----------|----------|
+| parent | /parent/* | 发需求、浏览老师、购买套餐、解锁老师、下单 |
+| teacher | /teacher/* | 个人资料、接单大厅、通知中心、收入统计 |
+| admin | /admin/* | 用户管理、认证审核、订单管理、收入面板、数据分析 |
+
+## 商业模式
+- 家长购买解锁套餐后才能查看老师完整信息（脱敏机制）
+- 订单抽佣 10%
+- 需求发布后自动匹配通知老师（算法权重：技能 25 + 地区 30 + 价格 25 + 时间 20）

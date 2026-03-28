@@ -42,6 +42,8 @@ export const teacherProfiles = sqliteTable("teacher_profiles", {
   ratingAvg: real("rating_avg").notNull().default(0),
   verified: integer("verified", { mode: "boolean" }).notNull().default(false),
   serviceTypes: text("service_types").notNull().default("[]"), // JSON array
+  certificationStatus: text("certification_status").notNull().default("uncertified"), // uncertified / pending / certified / rejected
+  certifiedAt: integer("certified_at", { mode: "timestamp" }),
 });
 
 export const insertTeacherProfileSchema = createInsertSchema(teacherProfiles).omit({
@@ -213,3 +215,86 @@ export const insertNotificationSchema = createInsertSchema(notifications).omit({
 });
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type Notification = typeof notifications.$inferSelect;
+
+// Demand Applications table
+export const demandApplications = sqliteTable("demand_applications", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  demandId: integer("demand_id").notNull().references(() => demands.id),
+  teacherId: integer("teacher_id").notNull().references(() => users.id),
+  introduction: text("introduction").notNull(),
+  quotedPrice: integer("quoted_price").notNull(),
+  status: text("status").notNull().default("pending"), // pending / accepted / rejected / withdrawn
+  parentNote: text("parent_note"),
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp" }),
+});
+
+export const insertDemandApplicationSchema = createInsertSchema(demandApplications).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertDemandApplication = z.infer<typeof insertDemandApplicationSchema>;
+export type DemandApplication = typeof demandApplications.$inferSelect;
+
+// Teacher Certifications table
+export const teacherCertifications = sqliteTable("teacher_certifications", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  teacherId: integer("teacher_id").notNull().references(() => users.id),
+  materialType: text("material_type").notNull(), // student_card / degree_cert / xuexin_screenshot / other
+  imageUrl: text("image_url").notNull(),
+  fileName: text("file_name"),
+  fileSize: integer("file_size"),
+  status: text("status").notNull().default("pending"), // pending / approved / rejected
+  adminNote: text("admin_note"),
+  reviewedBy: integer("reviewed_by"),
+  submittedAt: integer("submitted_at", { mode: "timestamp" }),
+  reviewedAt: integer("reviewed_at", { mode: "timestamp" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+});
+
+export const insertTeacherCertificationSchema = createInsertSchema(teacherCertifications).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertTeacherCertification = z.infer<typeof insertTeacherCertificationSchema>;
+export type TeacherCertification = typeof teacherCertifications.$inferSelect;
+
+// Conversations table
+export const conversations = sqliteTable("conversations", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  parentId: integer("parent_id").notNull().references(() => users.id),
+  teacherId: integer("teacher_id").notNull().references(() => users.id),
+  lastMessageId: integer("last_message_id"),
+  parentUnreadCount: integer("parent_unread_count").notNull().default(0),
+  teacherUnreadCount: integer("teacher_unread_count").notNull().default(0),
+  status: text("status").notNull().default("active"), // active / archived
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp" }),
+});
+
+export const insertConversationSchema = createInsertSchema(conversations).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertConversation = z.infer<typeof insertConversationSchema>;
+export type Conversation = typeof conversations.$inferSelect;
+
+// Messages table
+export const messages = sqliteTable("messages", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  conversationId: integer("conversation_id").notNull().references(() => conversations.id),
+  senderId: integer("sender_id").notNull().references(() => users.id),
+  type: text("type").notNull().default("text"), // text / system
+  content: text("content").notNull(),
+  systemRefType: text("system_ref_type"), // order_created / order_paid / order_completed
+  systemRefId: integer("system_ref_id"),
+  isRead: integer("is_read", { mode: "boolean" }).notNull().default(false),
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+});
+
+export const insertMessageSchema = createInsertSchema(messages).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertMessage = z.infer<typeof insertMessageSchema>;
+export type Message = typeof messages.$inferSelect;

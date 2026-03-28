@@ -1,0 +1,41 @@
+---
+description: 新功能开发检查清单 — 当用户要求添加新功能时应用
+globs:
+  - "**"
+---
+
+# 新功能开发检查清单
+
+开发新功能时按此顺序推进，每步完成后打勾再进入下一步。
+
+## 数据层
+- [ ] 是否需要新表？→ 在 `shared/schema.ts` 添加表定义 + insert schema + 类型
+- [ ] 是否需要新字段？→ 修改现有表定义
+- [ ] 更新 `server/storage.ts` 中的 `CREATE TABLE` SQL
+- [ ] 在 `IStorage` 接口添加新方法签名
+- [ ] 在 `DatabaseStorage` 中实现新方法
+- [ ] 如有种子数据需求，添加 `INSERT OR IGNORE` 语句
+
+## API 层
+- [ ] 在 `server/routes.ts` 添加新路由
+- [ ] 添加认证中间件（`requireAuth` / `requireAdmin`）
+- [ ] 参数校验（Zod schema 或手动校验）
+- [ ] 错误处理（try/catch + 合适的 HTTP 状态码）
+
+## 前端层
+- [ ] 在 `client/src/pages/` 对应角色目录下创建新页面组件
+- [ ] 在 `App.tsx` 注册新路由
+- [ ] 使用 `useQuery` 获取数据 / `useMutation` 提交数据
+- [ ] mutation 后 `invalidateQueries`
+- [ ] 表单使用 `react-hook-form` + `zodResolver`
+- [ ] 所有 UI 文案使用中文
+- [ ] 可交互元素添加 `data-testid`
+
+## 导航（如需要）
+- [ ] 在 `Layout.tsx` 的导航数组中添加菜单项（`parentNav` / `teacherNav` / `adminNav`）
+- [ ] 导航链接使用 `<Link href="/role/page">`
+
+## 收尾
+- [ ] 运行 linter 检查
+- [ ] 确认页面在浏览器中正常渲染
+- [ ] 总结变更内容

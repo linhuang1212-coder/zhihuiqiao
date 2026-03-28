@@ -1,0 +1,37 @@
+---
+description: 后端开发规范 — 修改 server/ 下文件时自动应用
+globs:
+  - "server/**"
+---
+
+# 后端规范
+
+## 架构分层
+```
+server/
+  index.ts    — 服务器启动（不要修改）
+  vite.ts     — Vite 中间件（不要修改）
+  routes.ts   — API 路由定义（保持 thin，业务委托给 storage）
+  storage.ts  — 数据访问层（IStorage 接口 + DatabaseStorage 实现）
+  static.ts   — 静态文件服务
+```
+
+## API 路由规范
+- 所有路由注册在 `routes.ts` 的 `registerRoutes()` 函数中
+- 路由保持 thin：参数校验 → 调用 storage 方法 → 返回结果
+- 认证中间件：`requireAuth`（需登录）、`requireAdmin`（需管理员）
+- 响应格式：成功返回 JSON 对象，失败返回 `{ message: "错误描述" }` + 合适的 HTTP 状态码
+
+## Express 5 注意事项
+- Express 5 的路由回调支持 async，错误自动传播到错误处理中间件
+- 使用 `express-session` 管理会话，`req.session.userId` / `req.session.role`
+
+## 数据访问规范
+- 所有 DB 操作通过 `storage` 对象（`IStorage` 接口），不直接写 SQL
+- Drizzle 查询是同步的：单行用 `.get()`，多行用 `.all()`
+- 写入操作使用 `.returning().get()` 获取插入/更新后的记录
+- 新增功能时：先在 `IStorage` 接口添加方法签名 → 在 `DatabaseStorage` 中实现
+
+## 脱敏机制
+- 未解锁老师的信息通过 `maskTeacherInfo()` 脱敏
+- 脱敏字段：手机号、微信号等敏感信息用 `***` 替代

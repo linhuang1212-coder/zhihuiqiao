@@ -9,10 +9,14 @@ import {
   type UserPurchase, type InsertUserPurchase, userPurchases,
   type UnlockRecord, type InsertUnlockRecord, unlockRecords,
   type Notification, type InsertNotification, notifications,
+  type TeacherCertification, type InsertTeacherCertification, teacherCertifications,
+  type DemandApplication, type InsertDemandApplication, demandApplications,
+  type Conversation, type InsertConversation, conversations,
+  type Message, type InsertMessage, messages,
 } from "@shared/schema";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import Database from "better-sqlite3";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, gte, ne, or, lt } from "drizzle-orm";
 
 const sqlite = new Database("data.db");
 sqlite.pragma("journal_mode = WAL");
@@ -51,7 +55,9 @@ sqlite.exec(`
     total_orders INTEGER NOT NULL DEFAULT 0,
     rating_avg REAL NOT NULL DEFAULT 0,
     verified INTEGER NOT NULL DEFAULT 0,
-    service_types TEXT NOT NULL DEFAULT '[]'
+    service_types TEXT NOT NULL DEFAULT '[]',
+    certification_status TEXT NOT NULL DEFAULT 'uncertified',
+    certified_at INTEGER
   );
 
   CREATE TABLE IF NOT EXISTS demands (
@@ -137,6 +143,62 @@ sqlite.exec(`
     parent_id INTEGER NOT NULL REFERENCES users(id),
     teacher_id INTEGER NOT NULL REFERENCES users(id),
     purchase_id INTEGER NOT NULL REFERENCES user_purchases(id),
+    created_at INTEGER
+  );
+
+  CREATE TABLE IF NOT EXISTS demand_applications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    demand_id INTEGER NOT NULL REFERENCES demands(id),
+    teacher_id INTEGER NOT NULL REFERENCES users(id),
+    introduction TEXT NOT NULL,
+    quoted_price INTEGER NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    parent_note TEXT,
+    created_at INTEGER,
+    updated_at INTEGER,
+    UNIQUE(demand_id, teacher_id)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_demand_applications_demand ON demand_applications(demand_id, status);
+  CREATE INDEX IF NOT EXISTS idx_demand_applications_teacher ON demand_applications(teacher_id, created_at DESC);
+
+  CREATE TABLE IF NOT EXISTS teacher_certifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    teacher_id INTEGER NOT NULL REFERENCES users(id),
+    material_type TEXT NOT NULL,
+    image_url TEXT NOT NULL,
+    file_name TEXT,
+    file_size INTEGER,
+    status TEXT NOT NULL DEFAULT 'pending',
+    admin_note TEXT,
+    reviewed_by INTEGER,
+    submitted_at INTEGER,
+    reviewed_at INTEGER,
+    created_at INTEGER
+  );
+
+  CREATE TABLE IF NOT EXISTS conversations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    parent_id INTEGER NOT NULL REFERENCES users(id),
+    teacher_id INTEGER NOT NULL REFERENCES users(id),
+    last_message_id INTEGER,
+    parent_unread_count INTEGER NOT NULL DEFAULT 0,
+    teacher_unread_count INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'active',
+    created_at INTEGER,
+    updated_at INTEGER,
+    UNIQUE(parent_id, teacher_id)
+  );
+
+  CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    conversation_id INTEGER NOT NULL REFERENCES conversations(id),
+    sender_id INTEGER NOT NULL REFERENCES users(id),
+    type TEXT NOT NULL DEFAULT 'text',
+    content TEXT NOT NULL,
+    system_ref_type TEXT,
+    system_ref_id INTEGER,
+    is_read INTEGER NOT NULL DEFAULT 0,
     created_at INTEGER
   );
 
@@ -276,6 +338,40 @@ export interface IStorage {
   getUnreadCount(userId: number): Promise<number>;
   markAsRead(id: number): Promise<Notification | undefined>;
   markAllAsRead(userId: number): Promise<void>;
+
+  // Demand Applications
+  createApplication(app: InsertDemandApplication): Promise<DemandApplication>;
+  getApplication(id: number): Promise<DemandApplication | undefined>;
+  getApplicationsByDemand(demandId: number): Promise<DemandApplication[]>;
+  getApplicationsByTeacher(teacherId: number): Promise<DemandApplication[]>;
+  getApplicationByDemandAndTeacher(demandId: number, teacherId: number): Promise<DemandApplication | undefined>;
+  getTodayApplicationCount(teacherId: number): Promise<number>;
+  getApplicationCountByDemand(demandId: number): Promise<number>;
+  updateApplicationStatus(id: number, status: string, parentNote?: string): Promise<DemandApplication | undefined>;
+  rejectOtherApplications(demandId: number, acceptedId: number): Promise<void>;
+
+  // Teacher Certifications
+  createCertification(cert: InsertTeacherCertification): Promise<TeacherCertification>;
+  getCertificationsByTeacher(teacherId: number): Promise<TeacherCertification[]>;
+  getCertification(id: number): Promise<TeacherCertification | undefined>;
+  getPendingCertifications(): Promise<TeacherCertification[]>;
+  getAllCertifications(status?: string): Promise<TeacherCertification[]>;
+  approveCertification(id: number, adminId: number): Promise<TeacherCertification | undefined>;
+  rejectCertification(id: number, adminId: number, reason: string): Promise<TeacherCertification | undefined>;
+  updateCertificationStatus(teacherId: number, status: string): Promise<TeacherProfile | undefined>;
+
+  // Conversations & Messages
+  createConversation(conv: InsertConversation): Promise<Conversation>;
+  getConversation(id: number): Promise<Conversation | undefined>;
+  getConversationByParticipants(parentId: number, teacherId: number): Promise<Conversation | undefined>;
+  getConversationsByUser(userId: number, role: string): Promise<Conversation[]>;
+  createMessage(msg: InsertMessage): Promise<Message>;
+  getMessagesByConversation(conversationId: number, before?: number, limit?: number): Promise<Message[]>;
+  markConversationRead(conversationId: number, userId: number, role: string): Promise<void>;
+  getUnreadConversationCount(userId: number, role: string): Promise<number>;
+  updateConversationLastMessage(conversationId: number, messageId: number): Promise<void>;
+  incrementUnreadCount(conversationId: number, recipientRole: string): Promise<void>;
+  checkChatAccess(parentId: number, teacherId: number): Promise<boolean>;
 
   // Stats
   getStats(): Promise<{
@@ -561,6 +657,256 @@ export class DatabaseStorage implements IStorage {
     db.update(notifications).set({ isRead: true })
       .where(and(eq(notifications.userId, userId), eq(notifications.isRead, false)))
       .run();
+  }
+
+  // Demand Applications
+  async createApplication(app: InsertDemandApplication): Promise<DemandApplication> {
+    return db.insert(demandApplications).values({
+      ...app,
+      createdAt: new Date(),
+    }).returning().get();
+  }
+
+  async getApplication(id: number): Promise<DemandApplication | undefined> {
+    return db.select().from(demandApplications).where(eq(demandApplications.id, id)).get();
+  }
+
+  async getApplicationsByDemand(demandId: number): Promise<DemandApplication[]> {
+    return db.select().from(demandApplications)
+      .where(eq(demandApplications.demandId, demandId))
+      .orderBy(desc(demandApplications.createdAt)).all();
+  }
+
+  async getApplicationsByTeacher(teacherId: number): Promise<DemandApplication[]> {
+    return db.select().from(demandApplications)
+      .where(eq(demandApplications.teacherId, teacherId))
+      .orderBy(desc(demandApplications.createdAt)).all();
+  }
+
+  async getApplicationByDemandAndTeacher(demandId: number, teacherId: number): Promise<DemandApplication | undefined> {
+    return db.select().from(demandApplications)
+      .where(and(eq(demandApplications.demandId, demandId), eq(demandApplications.teacherId, teacherId)))
+      .get();
+  }
+
+  async getTodayApplicationCount(teacherId: number): Promise<number> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const rows = db.select().from(demandApplications)
+      .where(and(
+        eq(demandApplications.teacherId, teacherId),
+        gte(demandApplications.createdAt, today),
+      )).all();
+    return rows.length;
+  }
+
+  async getApplicationCountByDemand(demandId: number): Promise<number> {
+    const rows = db.select().from(demandApplications)
+      .where(and(
+        eq(demandApplications.demandId, demandId),
+        ne(demandApplications.status, "withdrawn"),
+      )).all();
+    return rows.length;
+  }
+
+  async updateApplicationStatus(id: number, status: string, parentNote?: string): Promise<DemandApplication | undefined> {
+    const data: any = { status, updatedAt: new Date() };
+    if (parentNote !== undefined) data.parentNote = parentNote;
+    return db.update(demandApplications).set(data).where(eq(demandApplications.id, id)).returning().get();
+  }
+
+  async rejectOtherApplications(demandId: number, acceptedId: number): Promise<void> {
+    db.update(demandApplications).set({ status: "rejected", updatedAt: new Date() })
+      .where(and(
+        eq(demandApplications.demandId, demandId),
+        eq(demandApplications.status, "pending"),
+        ne(demandApplications.id, acceptedId),
+      )).run();
+  }
+
+  // Teacher Certifications
+  async createCertification(cert: InsertTeacherCertification): Promise<TeacherCertification> {
+    return db.insert(teacherCertifications).values({
+      ...cert,
+      createdAt: new Date(),
+    }).returning().get();
+  }
+
+  async getCertificationsByTeacher(teacherId: number): Promise<TeacherCertification[]> {
+    return db.select().from(teacherCertifications)
+      .where(eq(teacherCertifications.teacherId, teacherId))
+      .orderBy(desc(teacherCertifications.createdAt)).all();
+  }
+
+  async getCertification(id: number): Promise<TeacherCertification | undefined> {
+    return db.select().from(teacherCertifications).where(eq(teacherCertifications.id, id)).get();
+  }
+
+  async getPendingCertifications(): Promise<TeacherCertification[]> {
+    return db.select().from(teacherCertifications)
+      .where(eq(teacherCertifications.status, "pending"))
+      .orderBy(teacherCertifications.submittedAt).all();
+  }
+
+  async getAllCertifications(status?: string): Promise<TeacherCertification[]> {
+    if (status) {
+      return db.select().from(teacherCertifications)
+        .where(eq(teacherCertifications.status, status))
+        .orderBy(desc(teacherCertifications.createdAt)).all();
+    }
+    return db.select().from(teacherCertifications)
+      .orderBy(desc(teacherCertifications.createdAt)).all();
+  }
+
+  async approveCertification(id: number, adminId: number): Promise<TeacherCertification | undefined> {
+    const cert = await this.getCertification(id);
+    if (!cert) return undefined;
+    const now = new Date();
+    // Update all pending certs for this teacher in same batch
+    const certs = await this.getCertificationsByTeacher(cert.teacherId);
+    const pendingIds = certs.filter(c => c.status === "pending").map(c => c.id);
+    for (const pid of pendingIds) {
+      db.update(teacherCertifications).set({
+        status: "approved",
+        reviewedBy: adminId,
+        reviewedAt: now,
+      }).where(eq(teacherCertifications.id, pid)).run();
+    }
+    // Update teacher profile
+    db.update(teacherProfiles).set({
+      verified: true,
+      certificationStatus: "certified",
+      certifiedAt: now,
+    }).where(eq(teacherProfiles.userId, cert.teacherId)).run();
+    return this.getCertification(id);
+  }
+
+  async rejectCertification(id: number, adminId: number, reason: string): Promise<TeacherCertification | undefined> {
+    const cert = await this.getCertification(id);
+    if (!cert) return undefined;
+    const now = new Date();
+    const certs = await this.getCertificationsByTeacher(cert.teacherId);
+    const pendingIds = certs.filter(c => c.status === "pending").map(c => c.id);
+    for (const pid of pendingIds) {
+      db.update(teacherCertifications).set({
+        status: "rejected",
+        adminNote: reason,
+        reviewedBy: adminId,
+        reviewedAt: now,
+      }).where(eq(teacherCertifications.id, pid)).run();
+    }
+    db.update(teacherProfiles).set({
+      verified: false,
+      certificationStatus: "rejected",
+    }).where(eq(teacherProfiles.userId, cert.teacherId)).run();
+    return this.getCertification(id);
+  }
+
+  async updateCertificationStatus(teacherId: number, status: string): Promise<TeacherProfile | undefined> {
+    return db.update(teacherProfiles).set({
+      certificationStatus: status,
+    }).where(eq(teacherProfiles.userId, teacherId)).returning().get();
+  }
+
+  // Conversations & Messages
+  async createConversation(conv: InsertConversation): Promise<Conversation> {
+    return db.insert(conversations).values({
+      ...conv,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }).returning().get();
+  }
+
+  async getConversation(id: number): Promise<Conversation | undefined> {
+    return db.select().from(conversations).where(eq(conversations.id, id)).get();
+  }
+
+  async getConversationByParticipants(parentId: number, teacherId: number): Promise<Conversation | undefined> {
+    return db.select().from(conversations)
+      .where(and(eq(conversations.parentId, parentId), eq(conversations.teacherId, teacherId)))
+      .get();
+  }
+
+  async getConversationsByUser(userId: number, role: string): Promise<Conversation[]> {
+    if (role === "parent") {
+      return db.select().from(conversations)
+        .where(eq(conversations.parentId, userId))
+        .orderBy(desc(conversations.updatedAt)).all();
+    }
+    return db.select().from(conversations)
+      .where(eq(conversations.teacherId, userId))
+      .orderBy(desc(conversations.updatedAt)).all();
+  }
+
+  async createMessage(msg: InsertMessage): Promise<Message> {
+    return db.insert(messages).values({
+      ...msg,
+      createdAt: new Date(),
+    }).returning().get();
+  }
+
+  async getMessagesByConversation(conversationId: number, before?: number, limit: number = 30): Promise<Message[]> {
+    if (before) {
+      return db.select().from(messages)
+        .where(and(eq(messages.conversationId, conversationId), lt(messages.id, before)))
+        .orderBy(desc(messages.id))
+        .limit(limit).all().reverse();
+    }
+    return db.select().from(messages)
+      .where(eq(messages.conversationId, conversationId))
+      .orderBy(desc(messages.id))
+      .limit(limit).all().reverse();
+  }
+
+  async markConversationRead(conversationId: number, userId: number, role: string): Promise<void> {
+    if (role === "parent") {
+      db.update(conversations).set({ parentUnreadCount: 0 }).where(eq(conversations.id, conversationId)).run();
+    } else {
+      db.update(conversations).set({ teacherUnreadCount: 0 }).where(eq(conversations.id, conversationId)).run();
+    }
+    const conv = await this.getConversation(conversationId);
+    if (!conv) return;
+    db.update(messages).set({ isRead: true })
+      .where(and(
+        eq(messages.conversationId, conversationId),
+        ne(messages.senderId, userId),
+        eq(messages.isRead, false),
+      )).run();
+  }
+
+  async getUnreadConversationCount(userId: number, role: string): Promise<number> {
+    const convs = await this.getConversationsByUser(userId, role);
+    let total = 0;
+    for (const c of convs) {
+      total += role === "parent" ? c.parentUnreadCount : c.teacherUnreadCount;
+    }
+    return total;
+  }
+
+  async updateConversationLastMessage(conversationId: number, messageId: number): Promise<void> {
+    db.update(conversations).set({ lastMessageId: messageId, updatedAt: new Date() })
+      .where(eq(conversations.id, conversationId)).run();
+  }
+
+  async incrementUnreadCount(conversationId: number, recipientRole: string): Promise<void> {
+    if (recipientRole === "parent") {
+      db.update(conversations)
+        .set({ parentUnreadCount: sql`parent_unread_count + 1` })
+        .where(eq(conversations.id, conversationId)).run();
+    } else {
+      db.update(conversations)
+        .set({ teacherUnreadCount: sql`teacher_unread_count + 1` })
+        .where(eq(conversations.id, conversationId)).run();
+    }
+  }
+
+  async checkChatAccess(parentId: number, teacherId: number): Promise<boolean> {
+    const unlocked = await this.isTeacherUnlocked(parentId, teacherId);
+    if (unlocked) return true;
+    const orderList = db.select().from(orders)
+      .where(and(eq(orders.parentId, parentId), eq(orders.teacherId, teacherId)))
+      .all();
+    return orderList.length > 0;
   }
 
   // Stats

@@ -1,0 +1,42 @@
+---
+description: 前端开发规范 — 修改 client/ 下文件时自动应用
+globs:
+  - "client/**"
+---
+
+# 前端规范
+
+## 组件编写
+- 函数组件 + 箭头函数，named export（`export default function PageName()`）
+- 优先使用 `@/components/ui/` 中已有的 shadcn 组件，不要重复造轮子
+- 不要修改 `components/ui/` 下的任何文件
+
+## 路由
+- 所有路由在 `App.tsx` 中注册
+- 使用 wouter 的 `<Route>` + `<Switch>`，hash 模式（`useHashLocation`）
+- 受保护页面使用 `<ProtectedLayout>` 包裹
+- 新页面创建步骤：`pages/` 下新建文件 → `App.tsx` 添加路由
+
+## 数据获取
+- 读取：`useQuery({ queryKey: ["/api/path"], ... })`
+- 写入：`useMutation` + `apiRequest("POST", "/api/path", body)`
+- mutation 成功后必须 `queryClient.invalidateQueries({ queryKey: [...] })`
+- NEVER 直接使用 `fetch`，统一走 `apiRequest`
+
+## 认证
+- 使用 `useAuth()` hook 获取 `user`、`login`、`logout`
+- 登录状态通过 `/api/auth/me` 查询缓存判断
+- 401 时全局 queryFn 返回 null（不跳转，由 ProtectedLayout 处理）
+
+## 表单
+- 使用 `react-hook-form` + `zodResolver` + drizzle-zod 的 insert schema 验证
+- 错误提示使用 `toast({ title: "...", variant: "destructive" })`
+
+## 样式
+- Tailwind CSS v3 utility-first
+- 颜色使用 CSS 变量（`bg-primary`、`text-muted-foreground` 等），不硬编码颜色值
+- 响应式：mobile-first，`md:` 断点（768px）区分移动端和桌面端
+
+## wouter Link 注意事项
+- wouter 的 `<Link>` 自身渲染 `<a>`，内部 NEVER 再嵌套 `<a>` 标签
+- 样式和属性直接放在 `<Link>` 上：`<Link href="/path" className="...">文字</Link>`

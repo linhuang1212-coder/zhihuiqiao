@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, MapPin, Clock, DollarSign, Trash2 } from "lucide-react";
+import { Plus, MapPin, Clock, DollarSign, Trash2, Users } from "lucide-react";
 import type { Demand } from "@shared/schema";
 
 const statusMap: Record<string, { label: string; color: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -26,6 +26,10 @@ export default function MyDemands() {
   const { toast } = useToast();
   const { data: demands, isLoading } = useQuery<Demand[]>({
     queryKey: ["/api/demands/my"],
+  });
+
+  const { data: appCounts } = useQuery<Record<number, number>>({
+    queryKey: ["/api/demands/application-counts"],
   });
 
   const cancelMutation = useMutation({
@@ -117,7 +121,15 @@ export default function MyDemands() {
                         : "未知时间"}
                     </div>
                   </div>
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-2 items-end">
+                    {(appCounts?.[d.id] || 0) > 0 && (
+                      <Link href={`/parent/demands/${d.id}/applications`}>
+                        <Button size="sm" variant="default" className="gap-1.5" data-testid={`btn-view-apps-${d.id}`}>
+                          <Users size={13} />
+                          {appCounts[d.id]} 位老师申请
+                        </Button>
+                      </Link>
+                    )}
                     <Link href={`/parent/teachers`}>
                       <Button size="sm" variant="outline" data-testid={`btn-match-${d.id}`}>
                         匹配老师

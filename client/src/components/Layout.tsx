@@ -32,6 +32,9 @@ import {
   Unlock,
   CreditCard,
   Bell,
+  Send,
+  ClipboardCheck,
+  MessageCircle,
 } from "lucide-react";
 import { PerplexityAttribution } from "@/components/PerplexityAttribution";
 import { useToast } from "@/hooks/use-toast";
@@ -47,6 +50,7 @@ const parentNav: NavItem[] = [
   { href: "/parent/post-demand", label: "发布需求", icon: <ClipboardList size={18} /> },
   { href: "/parent/demands", label: "我的需求", icon: <BookOpen size={18} /> },
   { href: "/parent/teachers", label: "浏览老师", icon: <Search size={18} /> },
+  { href: "/parent/messages", label: "消息", icon: <MessageCircle size={18} /> },
   { href: "/parent/packages", label: "解锁套餐", icon: <CreditCard size={18} /> },
   { href: "/parent/unlocks", label: "解锁记录", icon: <Unlock size={18} /> },
   { href: "/parent/orders", label: "我的订单", icon: <Star size={18} /> },
@@ -55,7 +59,10 @@ const parentNav: NavItem[] = [
 const teacherNav: NavItem[] = [
   { href: "/teacher", label: "总览", icon: <LayoutDashboard size={18} /> },
   { href: "/teacher/profile", label: "我的资料", icon: <Settings size={18} /> },
-  { href: "/teacher/demands", label: "接单大厅", icon: <Search size={18} /> },
+  { href: "/teacher/certification", label: "学历认证", icon: <ShieldCheck size={18} /> },
+  { href: "/teacher/demand-hall", label: "需求大厅", icon: <Search size={18} /> },
+  { href: "/teacher/my-applications", label: "我的申请", icon: <Send size={18} /> },
+  { href: "/teacher/messages", label: "消息", icon: <MessageCircle size={18} /> },
   { href: "/teacher/notifications", label: "消息通知", icon: <Bell size={18} /> },
   { href: "/teacher/orders", label: "我的订单", icon: <BookOpen size={18} /> },
   { href: "/teacher/earnings", label: "收入统计", icon: <DollarSign size={18} /> },
@@ -65,6 +72,7 @@ const adminNav: NavItem[] = [
   { href: "/admin", label: "数据概览", icon: <LayoutDashboard size={18} /> },
   { href: "/admin/users", label: "用户管理", icon: <Users size={18} /> },
   { href: "/admin/verify", label: "教师认证", icon: <ShieldCheck size={18} /> },
+  { href: "/admin/certifications", label: "学历认证审核", icon: <GraduationCap size={18} /> },
   { href: "/admin/orders", label: "订单管理", icon: <BookOpen size={18} /> },
   { href: "/admin/revenue", label: "收入管理", icon: <DollarSign size={18} /> },
   { href: "/admin/analytics", label: "数据分析", icon: <BarChart3 size={18} /> },
@@ -183,23 +191,23 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {nav.map((item) => {
             const isActive = location === item.href || location.startsWith(item.href + "/");
             return (
-              <Link key={item.href} href={item.href}>
-                <a
-                  data-testid={`nav-${item.href.replace(/\//g, "-")}`}
-                  className={`
-                    flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1 text-sm font-medium
-                    transition-colors cursor-pointer
-                    ${
-                      isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                    }
-                  `}
-                  onClick={() => setSidebarOpen(false)}
-                >
-                  {item.icon}
-                  {item.label}
-                </a>
+              <Link
+                key={item.href}
+                href={item.href}
+                data-testid={`nav-${item.href.replace(/\//g, "-")}`}
+                className={`
+                  flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1 text-sm font-medium
+                  transition-colors cursor-pointer
+                  ${
+                    isActive
+                      ? "bg-primary text-primary-foreground"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  }
+                `}
+                onClick={() => setSidebarOpen(false)}
+              >
+                {item.icon}
+                {item.label}
               </Link>
             );
           })}
@@ -233,13 +241,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
           <div className="flex items-center gap-2">
             {showBell && (
-              <Link href={notifHref}>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="relative"
-                  data-testid="btn-notification-bell"
-                >
+              <Link href={notifHref} className="relative inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 w-9" data-testid="btn-notification-bell">
                   <Bell size={20} />
                   {unreadCount > 0 && (
                     <span
@@ -249,7 +251,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       {unreadCount > 99 ? "99+" : unreadCount}
                     </span>
                   )}
-                </Button>
               </Link>
             )}
 

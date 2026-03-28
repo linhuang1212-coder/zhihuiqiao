@@ -99,9 +99,7 @@ export default function Login() {
             <div className="mt-4 text-center">
               <p className="text-sm text-muted-foreground">
                 还没有账号？{" "}
-                <Link href="/register">
-                  <a className="text-primary hover:underline font-medium">立即注册</a>
-                </Link>
+                <Link href="/register" className="text-primary hover:underline font-medium">立即注册</Link>
               </p>
             </div>
             {/* Demo hints */}

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, Link } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -8,7 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Star, MapPin, GraduationCap, DollarSign, ShieldCheck, Lock, Unlock, CreditCard } from "lucide-react";
+import { Star, MapPin, GraduationCap, DollarSign, Lock, Unlock, CreditCard, MessageCircle } from "lucide-react";
+import { useLocation } from "wouter";
+import CertificationStatusBadge from "@/components/CertificationStatusBadge";
 
 export default function TeacherDetail() {
   const [, params] = useRoute("/parent/teachers/:id");
@@ -128,10 +131,7 @@ export default function TeacherDetail() {
                   </Badge>
                 )}
                 {teacher.profile?.verified && (
-                  <Badge variant="default" className="gap-1">
-                    <ShieldCheck size={12} />
-                    已认证
-                  </Badge>
+                  <CertificationStatusBadge status="certified" size="sm" />
                 )}
               </div>
               <div className="flex items-center gap-1.5 mt-1 text-sm text-muted-foreground">
@@ -171,6 +171,11 @@ export default function TeacherDetail() {
             <div className="mt-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg" data-testid="teacher-contact">
               <p className="text-sm font-medium text-green-700 dark:text-green-400">联系方式：{teacher.phone}</p>
             </div>
+          )}
+
+          {/* Send message button - only when unlocked */}
+          {isUnlocked && (
+            <ChatButton teacherId={teacherId} />
           )}
         </CardContent>
       </Card>
@@ -289,5 +294,36 @@ export default function TeacherDetail() {
         </Button>
       )}
     </div>
+  );
+}
+
+function ChatButton({ teacherId }: { teacherId: number }) {
+  const [, navigate] = useLocation();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+
+  const handleChat = async () => {
+    setLoading(true);
+    try {
+      const res = await apiRequest("POST", "/api/conversations", { teacherId });
+      const conv = await res.json();
+      navigate(`/parent/messages/${conv.id}`);
+    } catch (err: any) {
+      toast({ title: err.message || "无法发起对话", variant: "destructive" });
+    }
+    setLoading(false);
+  };
+
+  return (
+    <Button
+      className="w-full mt-3 gap-2"
+      variant="outline"
+      onClick={handleChat}
+      disabled={loading}
+      data-testid="btn-send-message"
+    >
+      <MessageCircle size={16} />
+      {loading ? "正在进入..." : "发消息"}
+    </Button>
   );
 }

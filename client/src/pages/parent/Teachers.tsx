@@ -7,9 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Search, Star, MapPin, DollarSign, GraduationCap, Lock, Unlock, ShieldCheck } from "lucide-react";
+import { Search, Star, MapPin, DollarSign, GraduationCap, Lock, Unlock } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import CertificationStatusBadge from "@/components/CertificationStatusBadge";
 
 interface TeacherWithProfile {
   id: number;
@@ -172,10 +173,7 @@ export default function BrowseTeachers() {
                           </Badge>
                         )}
                         {t.profile?.verified && (
-                          <Badge variant="default" className="text-xs px-1.5 py-0">
-                            <ShieldCheck size={10} className="mr-0.5" />
-                            已认证
-                          </Badge>
+                          <CertificationStatusBadge status="certified" size="sm" />
                         )}
                       </div>
                       <div className="flex items-center gap-1.5 mt-1 text-sm text-muted-foreground">

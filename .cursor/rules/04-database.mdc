@@ -1,0 +1,41 @@
+---
+description: 数据库与 Schema 规范 — 修改 shared/ 或涉及数据库操作时应用
+globs:
+  - "shared/**"
+  - "server/storage.ts"
+  - "drizzle.config.ts"
+---
+
+# 数据库规范
+
+## Schema 定义
+- 表定义在 `shared/schema.ts`，使用 Drizzle 的 `sqliteTable()`
+- 每张表配套生成 `createInsertSchema()` 用于 Zod 验证
+- 类型导出：`type User = typeof users.$inferSelect`
+
+## 现有数据表
+| 表 | 说明 |
+|---|---|
+| users | 用户（parent/teacher/admin） |
+| teacher_profiles | 老师档案（技能、证书、服务区域等） |
+| demands | 家长发布的需求 |
+| orders | 订单 |
+| reviews | 评价 |
+| match_logs | 匹配记录 |
+| unlock_packages | 解锁套餐定义 |
+| user_purchases | 用户购买记录 |
+| unlock_records | 解锁记录 |
+| notifications | 通知 |
+
+## SQLite 约束
+- 不支持数组列 — 用 JSON text 存储，应用层 `JSON.parse()`
+- JSON 字段示例：`skills`、`certificates`、`serviceAreas`、`availableTimes`
+- 建表使用 `CREATE TABLE IF NOT EXISTS`
+- 种子数据使用 `INSERT OR IGNORE`
+
+## Schema 变更流程
+1. 修改 `shared/schema.ts` 中的表定义
+2. 同步更新 `server/storage.ts` 中对应的 `CREATE TABLE` SQL
+3. 删除 `data.db` 文件
+4. 重启服务器，自动重新创建表和种子数据
+5. 如有新字段，更新相关 API 路由和前端页面
