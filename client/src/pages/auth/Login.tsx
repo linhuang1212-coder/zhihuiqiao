@@ -102,13 +102,6 @@ export default function Login() {
                 <Link href="/register" className="text-primary hover:underline font-medium">立即注册</Link>
               </p>
             </div>
-            {/* Demo hints */}
-            <div className="mt-4 p-3 bg-muted/50 rounded-lg text-xs text-muted-foreground space-y-1">
-              <p className="font-medium text-foreground mb-1">演示账号：</p>
-              <p>👤 管理员：admin / admin123</p>
-              <p>👨‍👩‍👧 家长：parent1 / 123456</p>
-              <p>👩‍🏫 老师：teacher1 / 123456</p>
-            </div>
           </CardContent>
         </Card>
       </div>
