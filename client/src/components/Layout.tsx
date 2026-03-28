@@ -97,6 +97,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       ? teacherNav
       : adminNav;
 
+  const homeHref = `/${user?.role || "parent"}`;
+
   const showBell = user?.role === "teacher" || user?.role === "parent";
   const { data: unreadData } = useQuery<{ count: number }>({
     queryKey: ["/api/notifications/unread-count"],
@@ -134,8 +136,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         `}
       >
         {/* Logo */}
-        <div className="flex items-center gap-3 px-5 py-5 border-b border-sidebar-border">
-          {/* Bridge SVG Logo */}
+        <Link
+          href={homeHref}
+          className="flex items-center gap-3 px-5 py-5 border-b border-sidebar-border cursor-pointer hover:bg-sidebar-accent/50 transition-colors"
+          data-testid="nav-logo-home"
+          onClick={() => setSidebarOpen(false)}
+        >
           <svg
             viewBox="0 0 40 32"
             fill="none"
@@ -143,9 +149,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             className="w-10 h-8 shrink-0"
             aria-label="智慧桥"
           >
-            {/* Bridge deck */}
             <rect x="2" y="22" width="36" height="3" rx="1.5" fill="hsl(var(--primary))" />
-            {/* Left arch */}
             <path
               d="M4 22 Q12 6 20 10"
               stroke="hsl(var(--primary))"
@@ -153,7 +157,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               fill="none"
               strokeLinecap="round"
             />
-            {/* Right arch */}
             <path
               d="M36 22 Q28 6 20 10"
               stroke="hsl(var(--primary))"
@@ -161,20 +164,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               fill="none"
               strokeLinecap="round"
             />
-            {/* Left pillar */}
             <rect x="7" y="22" width="2.5" height="8" rx="1" fill="hsl(var(--primary))" />
-            {/* Right pillar */}
             <rect x="30.5" y="22" width="2.5" height="8" rx="1" fill="hsl(var(--primary))" />
-            {/* Center pillar */}
             <rect x="19" y="10" width="2" height="12" rx="1" fill="hsl(var(--accent))" />
-            {/* Top capstone */}
             <circle cx="20" cy="8.5" r="2.5" fill="hsl(var(--accent))" />
           </svg>
           <div>
             <div className="font-bold text-base text-foreground tracking-wide">智慧桥</div>
             <div className="text-xs text-muted-foreground">WisdomBridge</div>
           </div>
-        </div>
+        </Link>
 
         {/* Role badge */}
         <div className="px-4 py-3 border-b border-sidebar-border">
@@ -189,7 +188,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto py-3 px-2">
           {nav.map((item) => {
-            const isActive = location === item.href || location.startsWith(item.href + "/");
+            const isRootPath = item.href === "/admin" || item.href === "/parent" || item.href === "/teacher";
+            const isActive = isRootPath
+              ? location === item.href
+              : location === item.href || location.startsWith(item.href + "/");
             return (
               <Link
                 key={item.href}
