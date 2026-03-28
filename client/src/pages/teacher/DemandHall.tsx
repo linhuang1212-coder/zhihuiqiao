@@ -39,6 +39,7 @@ interface HallDemand {
 }
 
 const SERVICE_CATEGORIES = ["全部", "音乐陪伴", "体育培训", "科目辅导", "兴趣培养", "氛围陪伴", "其他"];
+const SHENZHEN_DISTRICTS = ["全部", "南山区", "福田区", "罗湖区", "宝安区", "龙岗区", "龙华区", "盐田区", "坪山区", "光明区", "大鹏新区"];
 const serviceTypeMap: Record<string, string> = {
   home: "上门服务", center: "机构中心", online: "线上授课",
 };
@@ -53,14 +54,14 @@ const statusBadge: Record<string, { label: string; variant: "default" | "seconda
 export default function DemandHall() {
   const { toast } = useToast();
   const [category, setCategory] = useState("全部");
-  const [cityFilter, setCityFilter] = useState("");
+  const [districtFilter, setDistrictFilter] = useState("全部");
   const [applyDemand, setApplyDemand] = useState<HallDemand | null>(null);
   const [introduction, setIntroduction] = useState("");
   const [quotedPrice, setQuotedPrice] = useState("");
 
   const queryParams: Record<string, string> = {};
   if (category !== "全部") queryParams.category = category;
-  if (cityFilter.trim()) queryParams.city = cityFilter.trim();
+  if (districtFilter !== "全部") queryParams.city = `深圳市${districtFilter}`;
 
   const { data: demands, isLoading } = useQuery<HallDemand[]>({
     queryKey: ["/api/demand-hall", queryParams],
@@ -137,13 +138,18 @@ export default function DemandHall() {
                 </SelectContent>
               </Select>
             </div>
-            <Input
-              className="w-40 h-9"
-              placeholder="城市筛选"
-              value={cityFilter}
-              onChange={(e) => setCityFilter(e.target.value)}
-              data-testid="filter-city"
-            />
+            <div className="w-40">
+              <Select value={districtFilter} onValueChange={setDistrictFilter}>
+                <SelectTrigger data-testid="filter-district" className="h-9">
+                  <SelectValue placeholder="区域筛选" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SHENZHEN_DISTRICTS.map((d) => (
+                    <SelectItem key={d} value={d}>{d}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>

@@ -19,7 +19,7 @@ export default function Register() {
     confirmPassword: "",
     name: "",
     phone: "",
-    city: "",
+    city: "深圳",
     role: "parent",
   });
 
@@ -109,29 +109,16 @@ export default function Register() {
                 </Select>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label htmlFor="reg-phone">手机号</Label>
-                  <Input
-                    id="reg-phone"
-                    value={form.phone}
-                    onChange={(e) => handleChange("phone", e.target.value)}
-                    placeholder="手机号码"
-                    data-testid="input-reg-phone"
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="reg-city">所在城市</Label>
-                  <Input
-                    id="reg-city"
-                    value={form.city}
-                    onChange={(e) => handleChange("city", e.target.value)}
-                    placeholder="如：北京"
-                    data-testid="input-reg-city"
-                    className="mt-1"
-                  />
-                </div>
+              <div>
+                <Label htmlFor="reg-phone">手机号</Label>
+                <Input
+                  id="reg-phone"
+                  value={form.phone}
+                  onChange={(e) => handleChange("phone", e.target.value)}
+                  placeholder="手机号码"
+                  data-testid="input-reg-phone"
+                  className="mt-1"
+                />
               </div>
 
               <div>

@@ -13,6 +13,7 @@ import { X, Plus } from "lucide-react";
 
 const SERVICE_TYPES = ["音乐陪伴", "体育培训", "科目辅导", "兴趣培养", "氛围陪伴"];
 const TIME_OPTIONS = ["工作日上午", "工作日下午", "工作日晚上", "周六全天", "周日全天", "周末上午", "周末下午"];
+const SHENZHEN_DISTRICTS = ["南山区", "福田区", "罗湖区", "宝安区", "龙岗区", "龙华区", "盐田区", "坪山区", "光明区", "大鹏新区"];
 
 export default function TeacherProfile() {
   const { toast } = useToast();
@@ -33,7 +34,6 @@ export default function TeacherProfile() {
   const [serviceAreas, setServiceAreas] = useState<string[]>([]);
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
   const [newSkill, setNewSkill] = useState("");
-  const [newArea, setNewArea] = useState("");
 
   useEffect(() => {
     if (profile) {
@@ -85,11 +85,8 @@ export default function TeacherProfile() {
     }
   };
 
-  const addArea = () => {
-    if (newArea && !serviceAreas.includes(newArea)) {
-      setServiceAreas([...serviceAreas, newArea]);
-      setNewArea("");
-    }
+  const toggleArea = (a: string) => {
+    setServiceAreas((prev) => prev.includes(a) ? prev.filter((x) => x !== a) : [...prev, a]);
   };
 
   const toggleServiceType = (t: string) => {
@@ -189,20 +186,14 @@ export default function TeacherProfile() {
       </Card>
 
       <Card className="border-card-border">
-        <CardHeader className="pb-3"><CardTitle className="text-base">服务区域</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
+        <CardHeader className="pb-3"><CardTitle className="text-base">服务区域（深圳）</CardTitle></CardHeader>
+        <CardContent>
           <div className="flex flex-wrap gap-2">
-            {serviceAreas.map((a) => (
-              <Badge key={a} variant="outline" className="gap-1 pr-1">
-                {a}
-                <button onClick={() => setServiceAreas(serviceAreas.filter((x) => x !== a))} className="hover:text-destructive"><X size={12} /></button>
-              </Badge>
+            {SHENZHEN_DISTRICTS.map((a) => (
+              <button key={a} type="button" onClick={() => toggleArea(a)}
+                className={`px-3 py-1.5 rounded-full text-sm border transition-colors cursor-pointer ${serviceAreas.includes(a) ? "bg-primary text-primary-foreground border-primary" : "bg-background text-foreground border-border hover:border-primary"}`}
+                data-testid={`area-${a}`}>{a}</button>
             ))}
-          </div>
-          <div className="flex gap-2">
-            <Input value={newArea} onChange={(e) => setNewArea(e.target.value)} placeholder="添加区域，如：海淀区" className="flex-1" data-testid="input-new-area"
-              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addArea())} />
-            <Button type="button" variant="outline" size="sm" onClick={addArea} data-testid="btn-add-area">添加</Button>
           </div>
         </CardContent>
       </Card>

@@ -20,6 +20,7 @@ const SERVICE_TYPES = [
   { value: "online", label: "线上授课" },
 ];
 const TIME_OPTIONS = ["工作日上午", "工作日下午", "工作日晚上", "周六全天", "周日全天", "周末上午", "周末下午"];
+const SHENZHEN_DISTRICTS = ["南山区", "福田区", "罗湖区", "宝安区", "龙岗区", "龙华区", "盐田区", "坪山区", "光明区", "大鹏新区"];
 
 export default function PostDemand() {
   const [, navigate] = useLocation();
@@ -167,15 +168,17 @@ export default function PostDemand() {
             </div>
 
             <div>
-              <Label htmlFor="location">服务地点</Label>
-              <Input
-                id="location"
-                placeholder="如：北京市海淀区中关村"
-                value={form.location}
-                onChange={(e) => setForm({ ...form, location: e.target.value })}
-                data-testid="input-location"
-                className="mt-1"
-              />
+              <Label>服务区域</Label>
+              <Select value={form.location} onValueChange={(v) => setForm({ ...form, location: v })}>
+                <SelectTrigger className="mt-1" data-testid="select-location">
+                  <SelectValue placeholder="请选择服务区域" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SHENZHEN_DISTRICTS.map((d) => (
+                    <SelectItem key={d} value={`深圳市${d}`}>{d}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div>

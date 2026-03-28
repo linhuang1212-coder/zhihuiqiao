@@ -123,7 +123,7 @@ export default function BrowseTeachers() {
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <Input
           className="pl-9"
-          placeholder="搜索老师技能、学校、城市..."
+          placeholder="搜索老师技能、学校、区域..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           data-testid="input-search-teachers"
