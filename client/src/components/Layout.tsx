@@ -35,9 +35,13 @@ import {
   Send,
   ClipboardCheck,
   MessageCircle,
+  ArrowLeft,
+  Eye,
 } from "lucide-react";
 import { PerplexityAttribution } from "@/components/PerplexityAttribution";
 import { useToast } from "@/hooks/use-toast";
+
+type ViewMode = "admin" | "parent" | "teacher";
 
 interface NavItem {
   href: string;
@@ -71,8 +75,7 @@ const teacherNav: NavItem[] = [
 const adminNav: NavItem[] = [
   { href: "/admin", label: "数据概览", icon: <LayoutDashboard size={18} /> },
   { href: "/admin/users", label: "用户管理", icon: <Users size={18} /> },
-  { href: "/admin/verify", label: "教师认证", icon: <ShieldCheck size={18} /> },
-  { href: "/admin/certifications", label: "学历认证审核", icon: <GraduationCap size={18} /> },
+  { href: "/admin/certifications", label: "教师认证", icon: <ShieldCheck size={18} /> },
   { href: "/admin/orders", label: "订单管理", icon: <BookOpen size={18} /> },
   { href: "/admin/revenue", label: "收入管理", icon: <DollarSign size={18} /> },
   { href: "/admin/analytics", label: "数据分析", icon: <BarChart3 size={18} /> },
@@ -86,18 +89,34 @@ const roleLabels: Record<string, string> = {
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("admin");
   const { toast } = useToast();
 
+  const isAdmin = user?.role === "admin";
+  const isSimulating = isAdmin && viewMode !== "admin";
+
   const nav =
-    user?.role === "parent"
+    isAdmin && viewMode !== "admin"
+      ? viewMode === "parent" ? parentNav : teacherNav
+      : user?.role === "parent"
       ? parentNav
       : user?.role === "teacher"
       ? teacherNav
       : adminNav;
 
-  const homeHref = `/${user?.role || "parent"}`;
+  const homeHref = isSimulating ? `/${viewMode}` : `/${user?.role || "parent"}`;
+
+  const handleSwitchView = (mode: ViewMode) => {
+    setViewMode(mode);
+    setSidebarOpen(false);
+    if (mode === "admin") {
+      setLocation("/admin");
+    } else {
+      setLocation(`/${mode}`);
+    }
+  };
 
   const showBell = user?.role === "teacher" || user?.role === "parent";
   const { data: unreadData } = useQuery<{ count: number }>({
@@ -175,14 +194,49 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </Link>
 
-        {/* Role badge */}
-        <div className="px-4 py-3 border-b border-sidebar-border">
+        {/* Role badge & view switcher */}
+        <div className="px-4 py-3 border-b border-sidebar-border space-y-2">
           <Badge
             className="text-xs"
-            variant={user?.role === "admin" ? "destructive" : "default"}
+            variant={isSimulating ? "secondary" : isAdmin ? "destructive" : "default"}
           >
-            {roleLabels[user?.role || "parent"]} 视图
+            {isSimulating
+              ? `${roleLabels[viewMode]} 视图（管理员模拟）`
+              : `${roleLabels[user?.role || "parent"]} 视图`}
           </Badge>
+          {isAdmin && !isSimulating && (
+            <div className="flex gap-1.5 mt-1">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1 flex-1"
+                onClick={() => handleSwitchView("parent")}
+              >
+                <Eye size={12} />
+                家长视图
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1 flex-1"
+                onClick={() => handleSwitchView("teacher")}
+              >
+                <Eye size={12} />
+                老师视图
+              </Button>
+            </div>
+          )}
+          {isSimulating && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs gap-1 w-full text-destructive hover:text-destructive"
+              onClick={() => handleSwitchView("admin")}
+            >
+              <ArrowLeft size={12} />
+              返回管理员视图
+            </Button>
+          )}
         </div>
 
         {/* Nav */}
@@ -296,6 +350,25 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </DropdownMenu>
           </div>
         </header>
+
+        {/* Admin simulation banner */}
+        {isSimulating && (
+          <div className="flex items-center justify-between px-4 py-2 bg-amber-50 border-b border-amber-200 text-amber-800 text-sm shrink-0">
+            <div className="flex items-center gap-2">
+              <Eye size={14} />
+              <span>当前正在以<strong>{roleLabels[viewMode]}</strong>视角浏览</span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs gap-1 text-amber-800 hover:text-amber-900 hover:bg-amber-100"
+              onClick={() => handleSwitchView("admin")}
+            >
+              <ArrowLeft size={12} />
+              返回管理员视图
+            </Button>
+          </div>
+        )}
 
         {/* Page content */}
         <main className="flex-1 overflow-y-auto p-6">

@@ -242,8 +242,6 @@ export interface IStorage {
   createTeacherProfile(profile: InsertTeacherProfile): Promise<TeacherProfile>;
   updateTeacherProfile(userId: number, profile: Partial<InsertTeacherProfile>): Promise<TeacherProfile | undefined>;
   getAllTeachers(): Promise<(User & { profile: TeacherProfile | null })[]>;
-  getPendingTeachers(): Promise<(User & { profile: TeacherProfile | null })[]>;
-  verifyTeacher(userId: number): Promise<TeacherProfile | undefined>;
 
   // Demands
   createDemand(demand: InsertDemand): Promise<Demand>;
@@ -396,14 +394,6 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
-  async getPendingTeachers(): Promise<(User & { profile: TeacherProfile | null })[]> {
-    const allTeachers = await this.getAllTeachers();
-    return allTeachers.filter(t => t.profile && !t.profile.verified);
-  }
-
-  async verifyTeacher(userId: number): Promise<TeacherProfile | undefined> {
-    return db.update(teacherProfiles).set({ verified: true }).where(eq(teacherProfiles.userId, userId)).returning().get();
-  }
 
   // Demands
   async createDemand(demand: InsertDemand): Promise<Demand> {

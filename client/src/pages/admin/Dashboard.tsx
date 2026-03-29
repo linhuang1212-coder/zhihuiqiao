@@ -50,7 +50,7 @@ export default function AdminDashboard() {
         <Card className="border-card-border">
           <CardHeader className="pb-2"><CardTitle className="text-base">快速操作</CardTitle></CardHeader>
           <CardContent className="space-y-2 text-sm text-muted-foreground">
-            <p>• 前往 <a href="/#/admin/verify" className="text-primary hover:underline">教师认证</a> 审核待认证老师</p>
+            <p>• 前往 <a href="/#/admin/certifications" className="text-primary hover:underline">教师认证</a> 审核待认证老师</p>
             <p>• 前往 <a href="/#/admin/users" className="text-primary hover:underline">用户管理</a> 管理用户状态</p>
             <p>• 前往 <a href="/#/admin/orders" className="text-primary hover:underline">订单管理</a> 查看所有订单</p>
             <p>• 前往 <a href="/#/admin/revenue" className="text-primary hover:underline">收入管理</a> 确认购买订单</p>

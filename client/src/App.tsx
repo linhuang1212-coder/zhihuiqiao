@@ -44,7 +44,6 @@ import ParentUnlocks from "@/pages/parent/Unlocks";
 // Admin pages
 import AdminDashboard from "@/pages/admin/Dashboard";
 import AdminUsers from "@/pages/admin/Users";
-import TeacherVerify from "@/pages/admin/Verify";
 import AdminOrders from "@/pages/admin/AdminOrders";
 import AdminAnalytics from "@/pages/admin/Analytics";
 import AdminRevenue from "@/pages/admin/Revenue";
@@ -155,9 +154,6 @@ function AppRouter() {
       </Route>
       <Route path="/admin/users">
         {() => <ProtectedLayout><AdminUsers /></ProtectedLayout>}
-      </Route>
-      <Route path="/admin/verify">
-        {() => <ProtectedLayout><TeacherVerify /></ProtectedLayout>}
       </Route>
       <Route path="/admin/certifications">
         {() => <ProtectedLayout><AdminCertifications /></ProtectedLayout>}

@@ -763,20 +763,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
-  app.get("/api/admin/teachers/pending", requireAdmin, async (req, res) => {
-    const pending = await storage.getPendingTeachers();
-    return res.json(pending.map(({ password: _, ...u }) => u));
-  });
-
-  app.post("/api/admin/teachers/:id/verify", requireAdmin, async (req, res) => {
-    try {
-      const profile = await storage.verifyTeacher(parseInt(req.params.id));
-      return res.json(profile);
-    } catch (err: any) {
-      return res.status(500).json({ message: err.message });
-    }
-  });
-
   app.get("/api/admin/orders", requireAdmin, async (req, res) => {
     const orderList = await storage.getAllOrders();
     return res.json(orderList);
