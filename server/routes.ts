@@ -751,7 +751,21 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // =========== ADMIN ===========
   app.get("/api/admin/users", requireAdmin, async (req, res) => {
     const allUsers = await storage.getAllUsers();
-    return res.json(allUsers.map(({ password: _, ...u }) => u));
+    const result = await Promise.all(allUsers.map(async ({ password: _, ...u }) => {
+      if (u.role === "teacher") {
+        const profile = await storage.getTeacherProfile(u.id);
+        return {
+          ...u,
+          education: profile?.education || null,
+          degree: profile?.degree || null,
+          major: profile?.major || null,
+          skills: profile?.skills || "[]",
+          certificationStatus: profile?.certificationStatus || "uncertified",
+        };
+      }
+      return u;
+    }));
+    return res.json(result);
   });
 
   app.put("/api/admin/users/:id/status", requireAdmin, async (req, res) => {

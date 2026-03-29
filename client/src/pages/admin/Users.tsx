@@ -65,6 +65,7 @@ export default function AdminUsers() {
                   <TableHead>姓名</TableHead>
                   <TableHead>用户名</TableHead>
                   <TableHead>角色</TableHead>
+                  <TableHead>专业方向</TableHead>
                   <TableHead>城市</TableHead>
                   <TableHead>状态</TableHead>
                   <TableHead>操作</TableHead>
@@ -77,6 +78,33 @@ export default function AdminUsers() {
                     <TableCell className="text-muted-foreground">{u.username}</TableCell>
                     <TableCell>
                       <Badge variant="outline" className="text-xs">{roleLabels[u.role] || u.role}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {u.role === "teacher" ? (
+                        <div className="space-y-1">
+                          <div className="text-sm">
+                            {[u.education, u.degree, u.major].filter(Boolean).join(" · ") || "未填写"}
+                          </div>
+                          {(() => {
+                            try {
+                              const skills: string[] = JSON.parse(u.skills || "[]");
+                              if (skills.length === 0) return null;
+                              return (
+                                <div className="flex flex-wrap gap-1">
+                                  {skills.slice(0, 3).map((s: string) => (
+                                    <Badge key={s} variant="secondary" className="text-[10px] px-1.5 py-0 h-4">{s}</Badge>
+                                  ))}
+                                  {skills.length > 3 && (
+                                    <span className="text-[10px] text-muted-foreground">+{skills.length - 3}</span>
+                                  )}
+                                </div>
+                              );
+                            } catch { return null; }
+                          })()}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-muted-foreground">{u.city || "-"}</TableCell>
                     <TableCell>
