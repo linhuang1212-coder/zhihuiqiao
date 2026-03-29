@@ -1,0 +1,140 @@
+# 智慧桥 WisdomBridge — Harness Engineering Rules
+# 本文件为全局工程护栏，每次对话自动注入。
+# 细节规范见 .cursor/rules/*.mdc（按 glob 自动触发）。
+
+# ============================================================
+# 1. ARCHITECTURE — Layer Dependency DAG
+# ============================================================
+#
+#   L0  shared/schema.ts          零依赖；Drizzle 表定义 + Zod schema + TS 类型
+#        ^
+#   L1  server/storage.ts         仅依赖 L0（@shared/schema）+ drizzle-orm
+#        ^
+#   L2  server/routes.ts          依赖 L0 + L1（./storage）+ Express / 第三方库
+#        ^
+#   L3  client/src/**             通过 HTTP 调用 L2；可 import L0 的类型（type-only）
+#
+# IMPORT RULES (violations = immediate revert):
+#
+#   shared/           MUST NOT import from server/ or client/
+#   server/storage.ts MUST only import from @shared/schema, drizzle-orm, better-sqlite3
+#   server/routes.ts  MUST only import from ./storage, @shared/schema, express, third-party libs
+#   client/           MUST NOT import from server/ — communicate via apiRequest() only
+#   client/src/components/ui/*  FROZEN — never modify shadcn base components
+#   server/index.ts             FROZEN — never modify server bootstrap
+#   server/vite.ts              FROZEN — never modify Vite middleware
+
+# ============================================================
+# 2. CODING STANDARDS
+# ============================================================
+
+## TypeScript
+- strict mode enabled; avoid `any` in new code
+- Use path aliases: `@/` → client/src/, `@shared/` → shared/
+- Export types with `export type` when no runtime value is needed
+
+## React (client/)
+- Function components with named default export: `export default function PageName()`
+- Data fetching: useQuery({ queryKey: ["/api/..."] }) for reads
+- Data mutation: useMutation + apiRequest("METHOD", "/api/...", body)
+- After mutation success: queryClient.invalidateQueries({ queryKey: [...] })
+- NEVER use raw fetch() in business code — always go through apiRequest()
+- NEVER use localStorage / sessionStorage / indexedDB
+- Auth: useAuth() hook — user / login / logout
+- Routing: wouter hash mode (useHashLocation); register all routes in App.tsx
+- Protected pages wrapped in <ProtectedLayout>
+- Forms: react-hook-form + zodResolver + drizzle-zod insert schema
+- Every interactive element MUST have a data-testid attribute
+
+## Styling
+- Tailwind CSS v3, utility-first
+- Colors via CSS variables (bg-primary, text-muted-foreground, etc.) — no hardcoded hex
+- Responsive: mobile-first, md: breakpoint (768px) for desktop
+- wouter <Link> renders <a> — NEVER nest another <a> inside it
+
+## Express (server/)
+- Thin routes: validate params → call storage method → return result
+- Auth middleware: requireAuth (logged in), requireAdmin (admin role)
+- Response format: success → JSON object; error → { message: "..." } + HTTP status
+- All DB operations go through the storage object (IStorage interface)
+- Drizzle queries are synchronous: .get() for single row, .all() for multiple
+- Write operations: .returning().get() to get the inserted/updated record
+
+## Database (shared/ + server/storage.ts)
+- Tables defined in shared/schema.ts using sqliteTable()
+- Each table exports: table, insertSchema (drizzle-zod), InsertType, SelectType
+- SQLite has no array columns — use JSON text + JSON.parse() in application layer
+- Schema change procedure:
+    1. Modify shared/schema.ts
+    2. Update CREATE TABLE SQL in server/storage.ts
+    3. Update IStorage interface + DatabaseStorage implementation
+    4. Delete data.db → restart server
+    5. Update related API routes and frontend pages
+
+## UI Copy
+- ALL user-facing text MUST be in Chinese (简体中文)
+- Variable names, comments, and code in English
+
+# ============================================================
+# 3. PRE-EDIT DOCUMENT CHECKLIST
+# ============================================================
+# Before modifying code, the agent MUST read the relevant files below.
+#
+# ┌─────────────────────────────┬──────────────────────────────────────────────────┐
+# │ When you touch...           │ First read these files                           │
+# ├─────────────────────────────┼──────────────────────────────────────────────────┤
+# │ shared/schema.ts            │ server/storage.ts (CREATE TABLE + IStorage)      │
+# │ server/storage.ts           │ shared/schema.ts (table definitions)             │
+# │ server/routes.ts            │ server/storage.ts (IStorage interface methods)   │
+# │ New frontend page           │ client/src/App.tsx (route registration)          │
+# │                             │ client/src/components/Layout.tsx (nav arrays)    │
+# │ Auth logic                  │ client/src/hooks/use-auth.ts                     │
+# │                             │ server/routes.ts (requireAuth / requireAdmin)    │
+# │ Database / Drizzle config   │ shared/schema.ts + drizzle.config.ts             │
+# │ Any file                    │ This .cursorrules (auto-injected)                │
+# └─────────────────────────────┴──────────────────────────────────────────────────┘
+
+# ============================================================
+# 4. VERIFICATION COMMANDS
+# ============================================================
+# After EVERY code change, the agent MUST run these checks before
+# claiming the work is complete.
+#
+# Step 1 — Type check (catches compile errors across all layers):
+#   npx tsc --noEmit
+#
+# Step 2 — Lint modified files (catches style / logic issues):
+#   Use the ReadLints tool on every file you edited
+#
+# Step 3 — Manual checklist (agent self-review):
+#   [ ] All new UI text is in Chinese
+#   [ ] Every new interactive element has data-testid
+#   [ ] No import violates the Layer Dependency DAG (Section 1)
+#   [ ] No raw fetch() added outside queryClient.ts
+#   [ ] No modification to FROZEN files (ui/*, index.ts, vite.ts)
+#   [ ] If schema changed: storage.ts CREATE TABLE updated, data.db deleted
+#   [ ] If new page: route added in App.tsx, nav item in Layout.tsx (if needed)
+#
+# Step 4 — If user requests, commit with conventional format:
+#   git add -A
+#   git commit -m "type: 简短中文描述"
+#   Types: feat / fix / refactor / chore / docs
+
+# ============================================================
+# 5. RELATIONSHIP WITH .cursor/rules/*.mdc
+# ============================================================
+# This .cursorrules = global guardrails (always active).
+# .cursor/rules/*.mdc  = layer-specific details (activated by glob match).
+#
+#   01-project-global.mdc  — Project intro, tech stack, iron rules
+#   02-frontend.mdc        — React / wouter / TanStack Query / Tailwind details
+#   03-backend.mdc         — Express / storage / session details
+#   04-database.mdc        — Drizzle / SQLite / schema change workflow
+#   05-workflow.mdc        — Plan → Work → Review → Ship loop
+#   06-new-feature.mdc     — New feature checklist (data → API → UI → nav)
+#   07-bugfix.mdc          — Bug diagnosis & common failure modes
+#
+# Do NOT duplicate .mdc content here. This file focuses on:
+#   - Architectural boundaries (what can import what)
+#   - Cross-cutting verification steps
+#   - Pre-edit reading requirements
