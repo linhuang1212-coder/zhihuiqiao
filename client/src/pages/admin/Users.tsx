@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search } from "lucide-react";
 
@@ -17,9 +18,12 @@ const statusLabels: Record<string, { label: string; color: "default" | "secondar
   banned: { label: "已封禁", color: "destructive" },
 };
 
+type RoleFilter = "all" | "teacher" | "parent";
+
 export default function AdminUsers() {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
 
   const { data: users, isLoading } = useQuery<any[]>({ queryKey: ["/api/admin/users"] });
 
@@ -36,9 +40,13 @@ export default function AdminUsers() {
   });
 
   const filtered = users?.filter((u) => {
+    if (roleFilter !== "all" && u.role !== roleFilter) return false;
     if (!search) return true;
     return u.name?.includes(search) || u.username?.includes(search) || u.phone?.includes(search);
   });
+
+  const teacherCount = users?.filter((u) => u.role === "teacher").length || 0;
+  const parentCount = users?.filter((u) => u.role === "parent").length || 0;
 
   return (
     <div className="space-y-6">
@@ -47,9 +55,18 @@ export default function AdminUsers() {
         <p className="text-sm text-muted-foreground mt-1">查看和管理所有注册用户</p>
       </div>
 
-      <div className="relative">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-        <Input className="pl-9" placeholder="搜索姓名、用户名、手机号..." value={search} onChange={(e) => setSearch(e.target.value)} data-testid="input-search-users" />
+      <div className="flex flex-col sm:flex-row gap-3">
+        <Tabs value={roleFilter} onValueChange={(v) => setRoleFilter(v as RoleFilter)} className="shrink-0">
+          <TabsList>
+            <TabsTrigger value="all">全部</TabsTrigger>
+            <TabsTrigger value="teacher">老师 ({teacherCount})</TabsTrigger>
+            <TabsTrigger value="parent">家长 ({parentCount})</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <div className="relative flex-1">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input className="pl-9" placeholder="搜索姓名、用户名、手机号..." value={search} onChange={(e) => setSearch(e.target.value)} data-testid="input-search-users" />
+        </div>
       </div>
 
       <Card className="border-card-border">
