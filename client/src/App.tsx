@@ -35,7 +35,6 @@ import MyApplications from "@/pages/teacher/MyApplications";
 import TeacherOrders from "@/pages/teacher/Orders";
 import TeacherEarnings from "@/pages/teacher/Earnings";
 import TeacherNotifications from "@/pages/teacher/Notifications";
-import TeacherCertification from "@/pages/teacher/Certification";
 
 // Parent extra pages
 import ParentPackages from "@/pages/parent/Packages";
@@ -140,9 +139,6 @@ function AppRouter() {
       </Route>
       <Route path="/teacher/orders">
         {() => <ProtectedLayout><TeacherOrders /></ProtectedLayout>}
-      </Route>
-      <Route path="/teacher/certification">
-        {() => <ProtectedLayout><TeacherCertification /></ProtectedLayout>}
       </Route>
       <Route path="/teacher/earnings">
         {() => <ProtectedLayout><TeacherEarnings /></ProtectedLayout>}

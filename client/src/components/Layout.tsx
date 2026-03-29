@@ -63,7 +63,6 @@ const parentNav: NavItem[] = [
 const teacherNav: NavItem[] = [
   { href: "/teacher", label: "总览", icon: <LayoutDashboard size={18} /> },
   { href: "/teacher/profile", label: "我的资料", icon: <Settings size={18} /> },
-  { href: "/teacher/certification", label: "学历认证", icon: <ShieldCheck size={18} /> },
   { href: "/teacher/demand-hall", label: "需求大厅", icon: <Search size={18} /> },
   { href: "/teacher/my-applications", label: "我的申请", icon: <Send size={18} /> },
   { href: "/teacher/messages", label: "消息", icon: <MessageCircle size={18} /> },
